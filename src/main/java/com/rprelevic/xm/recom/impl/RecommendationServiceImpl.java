@@ -2,37 +2,74 @@ package com.rprelevic.xm.recom.impl;
 
 import com.rprelevic.xm.recom.api.RecommendationService;
 import com.rprelevic.xm.recom.api.model.CryptoStats;
-import com.rprelevic.xm.recom.api.repository.CryptoRepository;
+import com.rprelevic.xm.recom.api.model.Rate;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
+import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RecommendationServiceImpl implements RecommendationService {
 
-    private final CryptoRepository cryptoRepository;
+    private final RatesRepository ratesRepository;
     private final CryptoStatsRepository cryptoStatsRepository;
     private final SymbolPropertiesRepository symbolPropertiesRepository;
 
-    public RecommendationServiceImpl(CryptoRepository cryptoRepository, CryptoStatsRepository cryptoStatsRepository, SymbolPropertiesRepository symbolPropertiesRepository) {
-        this.cryptoRepository = cryptoRepository;
+    public RecommendationServiceImpl(RatesRepository ratesRepository, CryptoStatsRepository cryptoStatsRepository, SymbolPropertiesRepository symbolPropertiesRepository) {
+        this.ratesRepository = ratesRepository;
         this.cryptoStatsRepository = cryptoStatsRepository;
         this.symbolPropertiesRepository = symbolPropertiesRepository;
     }
 
     @Override
-    public List<String> listNormalized() {
-        return List.of();
+    public List<CryptoStats> listNormalized() {
+        return cryptoStatsRepository.findLatestStatsForAllSymbols().stream()
+                .sorted((a, b) -> Double.compare(b.normalizedRange(), a.normalizedRange()))
+                .collect(Collectors.toList());
     }
 
     @Override
     public CryptoStats getCryptoStatsForSymbol(String symbol) {
-        return null;
+        // Check if the symbol is supported
+        // TODO: Cache the symbol properties
+        final var symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol)
+                .orElseThrow(() -> new IllegalArgumentException("Symbol not supported: " + symbol)); // TODO: Exception handling
+
+        // Retrieve the latest crypto stats for the symbol
+        return cryptoStatsRepository
+                .findLatestCryptoStatsBySymbol(symbolProperties.symbol())
+                .orElseThrow(() -> new IllegalArgumentException("No stats found for symbol: " + symbol)); // TODO: Exception handling
     }
 
     @Override
     public String highestNormalizedRangeForDay(LocalDate day) {
-        return "";
+        // Fetch all rates for the given day
+        final var rates = ratesRepository.findAllPricesForDate(day);
+        if (rates.isEmpty()) {
+            throw new IllegalArgumentException("No rates found for the given day: %s".formatted(day)); // TODO: Exception handling
+        }
+
+        // Group rates by symbol and calculate normalization rate for each symbol
+        return rates.stream()
+                .collect(Collectors.groupingBy(Rate::symbol))
+                .entrySet()
+                .stream()
+                .map(entry -> {
+
+                    String symbol = entry.getKey();
+                    List<Rate> symbolRates = entry.getValue();
+                    double minRate = symbolRates.stream().mapToDouble(Rate::rate).min().orElse(0);
+                    double maxRate = symbolRates.stream().mapToDouble(Rate::rate).max().orElse(0);
+                    Double normalizedRange = (maxRate - minRate) / minRate;
+
+                    return Pair.of(symbol, normalizedRange);
+                })
+                .max(Comparator.comparingDouble(Pair::getRight))
+                .map(Pair::getLeft)
+                .orElse("No symbol found");
     }
 }

@@ -42,9 +42,7 @@ class CryptoStatsRepositoryH2Test {
 
         repository.saveCryptoStats(cryptoStats);
 
-        Optional<CryptoStats> persistedStats = repository.findCryptoStatsBySymbolAndPeriodStart(
-                cryptoStats.symbol(), cryptoStats.periodStart()
-        );
+        Optional<CryptoStats> persistedStats = repository.findLatestCryptoStatsBySymbol(cryptoStats.symbol());
 
         assertThat(persistedStats).isPresent();
         assertThat(persistedStats.get()).usingRecursiveComparison().isEqualTo(cryptoStats);
@@ -64,16 +62,14 @@ class CryptoStatsRepositoryH2Test {
         );
         repository.saveCryptoStats(updatedStats);
 
-        Optional<CryptoStats> persistedStats = repository.findCryptoStatsBySymbolAndPeriodStart(
-                updatedStats.symbol(), updatedStats.periodStart()
-        );
+        Optional<CryptoStats> persistedStats = repository.findLatestCryptoStatsBySymbol(updatedStats.symbol());
 
         assertThat(persistedStats).isPresent();
         assertThat(persistedStats.get()).usingRecursiveComparison().isEqualTo(updatedStats);
     }
 
     @Test
-    void givenCryptoStatsExists_whenFindBySymbolAndPeriod_thenReturnProperStats() {
+    void givenCryptoStatsExists_whenFindBySymbolAndPeriod_thenReturnLatestStats() {
         CryptoStats cryptoStats = CryptoStats.of(
                 "BTC", toLocalDateTime(2023, 1, 1),
                 toLocalDateTime(2023, 1, 31),
@@ -81,9 +77,7 @@ class CryptoStatsRepositoryH2Test {
         );
         repository.saveCryptoStats(cryptoStats);
 
-        Optional<CryptoStats> foundStats = repository.findCryptoStatsBySymbolAndPeriodStart(
-                "BTC", toLocalDateTime(2023, 1, 1)
-        );
+        Optional<CryptoStats> foundStats = repository.findLatestCryptoStatsBySymbol("BTC");
 
         assertThat(foundStats).isPresent();
         assertThat(foundStats.get()).usingRecursiveComparison().isEqualTo(cryptoStats);
@@ -98,25 +92,7 @@ class CryptoStatsRepositoryH2Test {
         );
         repository.saveCryptoStats(cryptoStats);
 
-        Optional<CryptoStats> foundStats = repository.findCryptoStatsBySymbolAndPeriodStart(
-                "ETH", toLocalDateTime(2023, 1, 1)
-        );
-
-        assertThat(foundStats).isNotPresent();
-    }
-
-    @Test
-    void givenCryptoStatsExistsWithSymbol_whenFindForNonExistingStartPeriod_thenReturnEmptyList() {
-        CryptoStats cryptoStats = CryptoStats.of(
-                "BTC", toLocalDateTime(2023, 1, 1),
-                toLocalDateTime(2023, 1, 31),
-                DataStatus.GREEN, 30000.0, 40000.0, 31000.0, 39000.0, 0.25
-        );
-        repository.saveCryptoStats(cryptoStats);
-
-        Optional<CryptoStats> foundStats = repository.findCryptoStatsBySymbolAndPeriodStart(
-                "BTC", toLocalDateTime(2023, 2, 1)
-        );
+        Optional<CryptoStats> foundStats = repository.findLatestCryptoStatsBySymbol("ETH");
 
         assertThat(foundStats).isNotPresent();
     }

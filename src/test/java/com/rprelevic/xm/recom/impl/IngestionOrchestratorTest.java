@@ -1,12 +1,13 @@
 package com.rprelevic.xm.recom.impl;
 
+import com.rprelevic.xm.recom.api.CryptoStatsCalculator;
 import com.rprelevic.xm.recom.api.DataSourceReader;
-import com.rprelevic.xm.recom.api.PriceConsolidator;
+import com.rprelevic.xm.recom.api.RatesConsolidator;
 import com.rprelevic.xm.recom.api.model.*;
 import com.rprelevic.xm.recom.api.model.IngestionDetails.IngestionStatus;
-import com.rprelevic.xm.recom.api.repository.CryptoRepository;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
 import com.rprelevic.xm.recom.api.repository.IngestionDetailsRepository;
+import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -28,15 +30,17 @@ class IngestionOrchestratorTest {
     @Mock
     private DataSourceReader sourceReader;
     @Mock
-    private CryptoRepository cryptoRepository;
+    private RatesRepository ratesRepository;
     @Mock
     private IngestionDetailsRepository ingestionDetailsRepository;
     @Mock
-    private PriceConsolidator priceConsolidator;
+    private RatesConsolidator ratesConsolidator;
     @Mock
     private SymbolPropertiesRepository symbolPropertiesRepository;
     @Mock
     private CryptoStatsRepository cryptoStatsRepository;
+    @Mock
+    private CryptoStatsCalculator cryptoStatsCalculator;
 
     @InjectMocks
     private IngestionOrchestrator ingestionOrchestrator;
@@ -47,23 +51,26 @@ class IngestionOrchestratorTest {
     }
 
     @Test
-    void givenSuccessfulIngestion_whenIngest_thenSavePricesAndCryptoInfo() throws Exception {
+    void givenSuccessfulIngestion_whenIngest_thenSaveRatesAndCryptoInfo() throws Exception {
         IngestionRequest request = new IngestionRequest("source", "BTC", SourceType.API);
         SymbolProperties symbolProperties = new SymbolProperties("BTC", MONTHLY, false, null);
-        List<Price> prices = List.of(new Price(Instant.now(), "BTC", 100.0));
-        List<Price> existingPrices = List.of(new Price(Instant.now().minus(1, ChronoUnit.DAYS), "BTC", 90.0));
+        List<Rate> rates = List.of(new Rate(Instant.now(), "BTC", 100.0));
+        List<Rate> existingRates = List.of(new Rate(Instant.now().minus(1, ChronoUnit.DAYS), "BTC", 90.0));
         ConsolidationResult consolidationResult =
-                new ConsolidationResult(prices, DataStatus.GREEN, Instant.now().minus(1, ChronoUnit.DAYS), Instant.now(), "BTC");
+                new ConsolidationResult(rates, DataStatus.GREEN, Instant.now().minus(1, ChronoUnit.DAYS), Instant.now(), "BTC");
 
         when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
         when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.of(true));
-        when(sourceReader.readPrices(request)).thenReturn(prices);
-        when(cryptoRepository.findPricesBySymbolAndInTimeWindow(eq("BTC"), any(Instant.class), any(Instant.class))).thenReturn(existingPrices);
-        when(priceConsolidator.consolidate(eq(existingPrices), eq(prices), any(Instant.class), any(Instant.class))).thenReturn(consolidationResult);
+        when(sourceReader.readRates(request)).thenReturn(rates);
+        when(ratesRepository.findRatesBySymbolAndInTimeWindow(eq("BTC"), any(Instant.class), any(Instant.class))).thenReturn(existingRates);
+        when(ratesConsolidator.consolidate(eq(existingRates), eq(rates), any(Instant.class), any(Instant.class))).thenReturn(consolidationResult);
+        when(cryptoStatsCalculator.calculateStats(consolidationResult))
+                .thenReturn(new CryptoStats(LocalDateTime.now(), LocalDateTime.now(), "BTC", DataStatus.GREEN,
+                        100.0, 100.0, 100.0, 100.0, 0.5));
 
         ingestionOrchestrator.ingest(request);
 
-        verify(cryptoRepository).saveAll(prices);
+        verify(ratesRepository).saveAll(rates);
         verify(cryptoStatsRepository).saveCryptoStats(any(CryptoStats.class));
         verify(ingestionDetailsRepository).save(any(IngestionDetails.class));
         verify(ingestionDetailsRepository)
@@ -90,20 +97,23 @@ class IngestionOrchestratorTest {
     void givenDataStatusRed_whenIngest_thenUpdateStatusToFailure() throws Exception {
         IngestionRequest request = new IngestionRequest("source", "BTC", SourceType.API);
         SymbolProperties symbolProperties = new SymbolProperties("BTC", MONTHLY, false, null);
-        List<Price> prices = List.of(new Price(Instant.now(), "BTC", 100.0));
-        List<Price> existingPrices = List.of(new Price(Instant.now().minus(1, ChronoUnit.DAYS), "BTC", 90.0));
-        ConsolidationResult consolidationResult = new ConsolidationResult(prices, DataStatus.RED, Instant.now().minus(1, ChronoUnit.DAYS), Instant.now(), "BTC");
-        ;
-
+        List<Rate> rates = List.of(new Rate(Instant.now(), "BTC", 100.0));
+        List<Rate> existingRates = List.of(new Rate(Instant.now().minus(1, ChronoUnit.DAYS), "BTC", 90.0));
+        ConsolidationResult consolidationResult = new ConsolidationResult(rates, DataStatus.RED,
+                Instant.now().minus(1, ChronoUnit.DAYS), Instant.now(), "BTC");
+        
         when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
         when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.of(true));
-        when(sourceReader.readPrices(request)).thenReturn(prices);
-        when(cryptoRepository.findPricesBySymbolAndInTimeWindow(eq("BTC"), any(Instant.class), any(Instant.class))).thenReturn(existingPrices);
-        when(priceConsolidator.consolidate(eq(existingPrices), eq(prices), any(Instant.class), any(Instant.class))).thenReturn(consolidationResult);
+        when(sourceReader.readRates(request)).thenReturn(rates);
+        when(ratesRepository.findRatesBySymbolAndInTimeWindow(eq("BTC"), any(Instant.class), any(Instant.class))).thenReturn(existingRates);
+        when(ratesConsolidator.consolidate(eq(existingRates), eq(rates), any(Instant.class), any(Instant.class))).thenReturn(consolidationResult);
+        when(cryptoStatsCalculator.calculateStats(consolidationResult))
+                .thenReturn(new CryptoStats(LocalDateTime.now(), LocalDateTime.now(), "BTC", DataStatus.RED,
+                        100.0, 100.0, 100.0, 100.0, 0.5));
 
         ingestionOrchestrator.ingest(request);
 
-        verify(cryptoRepository, never()).saveAll(prices);
+        verify(ratesRepository, never()).saveAll(rates);
         verify(cryptoStatsRepository).saveCryptoStats(any(CryptoStats.class));
         verify(ingestionDetailsRepository)
                 .ingestionFailed(argThat(details -> details.status().equals(IngestionStatus.IN_PROGRESS)));
@@ -117,7 +127,7 @@ class IngestionOrchestratorTest {
 
         when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
         when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.of(true));
-        when(sourceReader.readPrices(request)).thenThrow(new RuntimeException("Test Exception"));
+        when(sourceReader.readRates(request)).thenThrow(new RuntimeException("Test Exception"));
 
         ingestionOrchestrator.ingest(request);
 

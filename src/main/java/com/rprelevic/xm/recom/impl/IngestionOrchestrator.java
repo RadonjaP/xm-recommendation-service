@@ -2,12 +2,14 @@ package com.rprelevic.xm.recom.impl;
 
 import com.rprelevic.xm.recom.api.CryptoStatsCalculator;
 import com.rprelevic.xm.recom.api.DataSourceReader;
-import com.rprelevic.xm.recom.api.PriceConsolidator;
+import com.rprelevic.xm.recom.api.RatesConsolidator;
 import com.rprelevic.xm.recom.api.model.*;
-import com.rprelevic.xm.recom.api.repository.CryptoRepository;
+import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
 import com.rprelevic.xm.recom.api.repository.IngestionDetailsRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,27 +20,27 @@ import static com.rprelevic.xm.recom.api.model.IngestionDetails.IngestionStatus.
 
 public class IngestionOrchestrator {
 
-    // TODO: Add logging
+    private static final Logger LOGGER = LoggerFactory.getLogger(IngestionOrchestrator.class);
 
     private final DataSourceReader sourceReader;
-    private final CryptoRepository cryptoRepository;
+    private final RatesRepository ratesRepository;
     private final IngestionDetailsRepository ingestionDetailsRepository;
-    private final PriceConsolidator priceConsolidator;
+    private final RatesConsolidator ratesConsolidator;
     private final SymbolPropertiesRepository symbolPropertiesRepository;
     private final CryptoStatsRepository cryptoStatsRepository;
     private final CryptoStatsCalculator cryptoStatsCalculator;
 
     public IngestionOrchestrator(DataSourceReader datasourceReader,
-                                 CryptoRepository cryptoRepository,
+                                 RatesRepository ratesRepository,
                                  IngestionDetailsRepository ingestionDetailsRepository,
-                                 PriceConsolidator priceConsolidator,
+                                 RatesConsolidator ratesConsolidator,
                                  SymbolPropertiesRepository symbolPropertiesRepository,
                                  CryptoStatsRepository cryptoStatsRepository,
                                  CryptoStatsCalculator cryptoStatsCalculator) {
         this.sourceReader = datasourceReader;
-        this.cryptoRepository = cryptoRepository;
+        this.ratesRepository = ratesRepository;
         this.ingestionDetailsRepository = ingestionDetailsRepository;
-        this.priceConsolidator = priceConsolidator;
+        this.ratesConsolidator = ratesConsolidator;
         this.symbolPropertiesRepository = symbolPropertiesRepository;
         this.cryptoStatsRepository = cryptoStatsRepository;
         this.cryptoStatsCalculator = cryptoStatsCalculator;
@@ -63,16 +65,17 @@ public class IngestionOrchestrator {
             // Validate we can ingest the symbol and lock it
             verifyAndLockSymbol(request.symbol());
 
-            // Read prices from datasource
-            final List<Price> newPrices = sourceReader.readPrices(request);
+            // Read rates from datasource
+            final List<Rate> newRates = sourceReader.readRates(request);
 
-            // fetch the latest prices from the database for desired time window and consolidate them with new data
-            final var startPeriod = newPrices.get(0).dateTime();
-            final var endPeriod = newPrices.get(newPrices.size() - 1).dateTime();
-            final List<Price> existingPrices = cryptoRepository
-                    .findPricesBySymbolAndInTimeWindow(request.symbol(), startPeriod, endPeriod);
+            // fetch the latest rates from the database for desired time window and consolidate them with new data
+            final var startPeriod = newRates.get(newRates.size() - 1).dateTime();
+            final var endPeriod = newRates.get(0).dateTime();
 
-            final var consolidationResult = priceConsolidator.consolidate(existingPrices, newPrices, startPeriod, endPeriod);
+            final List<Rate> existingRates = ratesRepository
+                    .findRatesBySymbolAndInTimeWindow(request.symbol(), startPeriod, endPeriod);
+
+            final var consolidationResult = ratesConsolidator.consolidate(existingRates, newRates, startPeriod, endPeriod);
 
             // calculate statistics for desired time window
             final var timeWindowStats = cryptoStatsCalculator.calculateStats(consolidationResult);
@@ -81,22 +84,21 @@ public class IngestionOrchestrator {
 
                 // Keep user notified about the RED status but do not store rate data in the database
                 cryptoStatsRepository.saveCryptoStats(timeWindowStats);
-                throw new RuntimeException("Data status is RED"); // TODO: Define exception
+                throw new RuntimeException("Data status is RED."); // TODO: Define exception
             }
 
-            // store prices in the database (if no errors occurred, aka. ingestion is SUCCESS and stats are AMBER or GREEN)
-            cryptoRepository.saveAll(consolidationResult.consolidatedPrices());
+            // Store rates in the database
+            ratesRepository.saveAll(consolidationResult.consolidatedRates());
 
-            // store/update statistics in the database
+            // Store/update statistics in the database
             cryptoStatsRepository.saveCryptoStats(timeWindowStats);
 
-            // Update ingestion information in the database - ingestion status (SUCCESS, FAILURE),
-            // number of records ingested, ingestion end time
-            ingestionDetailsRepository.ingestionSuccessful(ingestionDetails, consolidationResult.consolidatedPrices().size());
+            // Update ingestion information in the database
+            ingestionDetailsRepository.ingestionSuccessful(ingestionDetails, consolidationResult.consolidatedRates().size());
 
         } catch (Exception e) {
+            LOGGER.error("Symbol {} ingestion failed from source {}.", request.symbol(), request.source(), e);
             ingestionDetailsRepository.ingestionFailed(ingestionDetails);
-            return;
         } finally {
             // Release the lock on the symbol
             symbolPropertiesRepository.unlockSymbol(request.symbol());
@@ -105,12 +107,15 @@ public class IngestionOrchestrator {
 
     private void verifyAndLockSymbol(String symbol) {
         final Optional<SymbolProperties> symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol);
-        if (symbolProperties.isEmpty() || symbolProperties.get().locked()) {
-            throw new RuntimeException("Symbol is not supported or is locked"); // TODO: Define exception
+        if (symbolProperties.isEmpty()) {
+            throw new RuntimeException("Symbol %s is not supported.".formatted(symbol)); // TODO: Define exception
+        }
+        if (symbolProperties.get().locked()) {
+            throw new RuntimeException("Symbol %s is already locked.".formatted(symbol)); // TODO: Define exception
         }
 
         symbolPropertiesRepository.lockSymbol(symbol)
-                .orElseThrow(() -> new RuntimeException("Failed to lock the symbol")); // TODO: Define exception
+                .orElseThrow(() -> new RuntimeException("Failed to lock the symbol %s".formatted(symbol))); // TODO: Define exception
     }
 
 }

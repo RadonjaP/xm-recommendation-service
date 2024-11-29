@@ -1,4 +1,4 @@
-timestamp,symbol,price
+timestamp,symbol,rate
 1641009600000,BTC,46813.21
 1641020400000,BTC,46979.61
 1641031200000,BTC,47143.98

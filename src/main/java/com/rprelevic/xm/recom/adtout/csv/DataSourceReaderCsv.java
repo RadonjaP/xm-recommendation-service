@@ -3,7 +3,7 @@ package com.rprelevic.xm.recom.adtout.csv;
 import com.rprelevic.xm.recom.adtout.csv.ex.DataSourceReadFailedException;
 import com.rprelevic.xm.recom.api.DataSourceReader;
 import com.rprelevic.xm.recom.api.model.IngestionRequest;
-import com.rprelevic.xm.recom.api.model.Price;
+import com.rprelevic.xm.recom.api.model.Rate;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,7 +18,7 @@ public class DataSourceReaderCsv implements DataSourceReader {
     private static final Logger LOGGER = Logger.getLogger(DataSourceReaderCsv.class.getName());
 
     @Override
-    public List<Price> readPrices(IngestionRequest request) {
+    public List<Rate> readRates(IngestionRequest request) {
 
         try (var reader = Files.newBufferedReader(Path.of(request.source()))) {
 
@@ -26,7 +26,7 @@ public class DataSourceReaderCsv implements DataSourceReader {
                     .skip(1) // Skip header
                     .map(line -> {
                         String[] parts = line.split(",");
-                        return new Price(
+                        return new Rate(
                                 Instant.ofEpochMilli(Long.parseLong(parts[0])), // dateTime
                                 parts[1], // symbol
                                 Double.parseDouble(parts[2]) // rate

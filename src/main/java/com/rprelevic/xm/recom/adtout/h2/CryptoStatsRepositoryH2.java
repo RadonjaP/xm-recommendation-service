@@ -6,16 +6,30 @@ import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 public class CryptoStatsRepositoryH2 implements CryptoStatsRepository {
 
     private static final String MERGE_CRYPTO_STATS_SQL = """
-                MERGE INTO crypto_stats (symbol, period_start, period_end, status, min_rate, max_rate, oldest_price, latest_price, normalized_range)
+                MERGE INTO crypto_stats (symbol, period_start, period_end, status, min_rate, max_rate, oldest_rate, latest_rate, normalized_range)
                 KEY (symbol, period_start)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
-    private static final String FIND_STATS_BY_PRIMARY_KEY_SQL = "SELECT * FROM crypto_stats WHERE symbol = ? AND period_start = ?";
+    private static final String FIND_LATEST_STATS_FOR_ALL_SYMBOLS = """
+                SELECT cs1.*
+                FROM crypto_stats cs1
+                INNER JOIN (
+                    SELECT symbol, MAX(period_end) AS latest_period_end
+                    FROM crypto_stats
+                    GROUP BY symbol
+                ) cs2 ON cs1.symbol = cs2.symbol AND cs1.period_end = cs2.latest_period_end
+            """;
+    private static final String FIND_LATEST_CRYPTO_STATS_BY_SYMBOL_SQL = """ 
+            SELECT * FROM crypto_stats
+            WHERE symbol = ?
+            ORDER BY period_start DESC LIMIT 1
+            """;
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -39,27 +53,37 @@ public class CryptoStatsRepositoryH2 implements CryptoStatsRepository {
     }
 
     @Override
-    public Optional<CryptoStats> findCryptoStatsBySymbolAndPeriodStart(String symbol, LocalDateTime periodStart) {
-        return jdbcTemplate.query(
-                FIND_STATS_BY_PRIMARY_KEY_SQL,
-                rs -> {
-                    if (rs.next()) {
-                        return Optional.of(new CryptoStats(
-                                rs.getObject("period_start", LocalDateTime.class),
-                                rs.getObject("period_end", LocalDateTime.class),
-                                rs.getString("symbol"),
-                                DataStatus.valueOf(rs.getString("status")),
-                                rs.getDouble("min_rate"),
-                                rs.getDouble("max_rate"),
-                                rs.getDouble("oldest_price"),
-                                rs.getDouble("latest_price"),
-                                rs.getDouble("normalized_range")
-                        ));
-                    } else {
-                        return Optional.empty();
-                    }
-                },
-                new Object[]{symbol, periodStart}
-        );
+    public Optional<CryptoStats> findLatestCryptoStatsBySymbol(String symbol) {
+        return jdbcTemplate.query(FIND_LATEST_CRYPTO_STATS_BY_SYMBOL_SQL, (rs) -> {
+            if (rs.next()) {
+                return Optional.of(new CryptoStats(
+                        rs.getTimestamp("period_start").toLocalDateTime(),
+                        rs.getTimestamp("period_end").toLocalDateTime(),
+                        rs.getString("symbol"),
+                        DataStatus.valueOf(rs.getString("status")),
+                        rs.getDouble("min_rate"),
+                        rs.getDouble("max_rate"),
+                        rs.getDouble("oldest_rate"),
+                        rs.getDouble("latest_rate"),
+                        rs.getDouble("normalized_range")
+                ));
+            }
+            return Optional.empty();
+        }, symbol);
+    }
+
+    @Override
+    public List<CryptoStats> findLatestStatsForAllSymbols() {
+        return jdbcTemplate.query(FIND_LATEST_STATS_FOR_ALL_SYMBOLS, (rs, rowNum) -> new CryptoStats(
+                rs.getObject("period_start", LocalDateTime.class),
+                rs.getObject("period_end", LocalDateTime.class),
+                rs.getString("symbol"),
+                DataStatus.valueOf(rs.getString("status")),
+                rs.getDouble("min_rate"),
+                rs.getDouble("max_rate"),
+                rs.getDouble("oldest_rate"),
+                rs.getDouble("latest_rate"),
+                rs.getDouble("normalized_range")
+        ));
     }
 }

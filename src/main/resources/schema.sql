@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS crypto_stats (
     status VARCHAR(255) NOT NULL,
     min_rate DOUBLE NOT NULL,
     max_rate DOUBLE NOT NULL,
-    oldest_price DOUBLE NOT NULL,
-    latest_price DOUBLE NOT NULL,
+    oldest_rate DOUBLE NOT NULL,
+    latest_rate DOUBLE NOT NULL,
     normalized_range DOUBLE NOT NULL,
     PRIMARY KEY (symbol, period_start)
 );
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS ingestion_details (
     PRIMARY KEY (ingestion_id)
 );
 
-CREATE TABLE IF NOT EXISTS price (
+CREATE TABLE IF NOT EXISTS rates (
     date_time TIMESTAMP NOT NULL,
     symbol VARCHAR(255) NOT NULL,
     rate DOUBLE NOT NULL,

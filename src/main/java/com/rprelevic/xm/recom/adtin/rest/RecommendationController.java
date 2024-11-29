@@ -1,6 +1,7 @@
 package com.rprelevic.xm.recom.adtin.rest;
 
 import com.rprelevic.xm.recom.api.RecommendationService;
+import com.rprelevic.xm.recom.api.model.CryptoStats;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -25,9 +26,8 @@ public class RecommendationController {
 
     @GetMapping("/normalized-range")
     @Operation(summary = "Fetch descending sorted list of all cryptos comparing normalized range")
-    @ApiResponse(responseCode = "501", description = "Not Implemented")
     @ApiResponse(responseCode = "200", description = "Success")
-    public ResponseEntity<List<String>> getAllCryptosNormalizedRange() {
+    public ResponseEntity<List<CryptoStats>> getAllCryptosNormalizedRange() {
 
         return ResponseEntity.ok(recommendationService.listNormalized());
     }
@@ -35,9 +35,8 @@ public class RecommendationController {
     @GetMapping("/normalized-range/highest")
     @Operation(summary = "Get the crypto with the highest normalized range for a specific day")
     @Parameter(name = "date", description = "Specific day in format dd-mm-yyyy", example = "01-01-2020", required = true)
-    @ApiResponse(responseCode = "501", description = "Not Implemented")
     @ApiResponse(responseCode = "200", description = "Success")
-    public ResponseEntity<String> getCryptoWithHighestNormalizedRange(@RequestParam String date) {
+    public ResponseEntity<String> getCryptoWithHighestNormalizedRangeInDay(@RequestParam String date) {
 
         final LocalDate day;
         try {
@@ -52,7 +51,6 @@ public class RecommendationController {
     @GetMapping("/stats/{symbol}")
     @Operation(summary = "Get the oldest/newest/min/max values for a requested crypto")
     @Parameter(name = "symbol", description = "Symbol of the crypto", required = true)
-    @ApiResponse(responseCode = "501", description = "Not Implemented")
     @ApiResponse(responseCode = "200", description = "Success")
     public ResponseEntity<CryptoStatsRs> getCryptoStats(@PathVariable String symbol) {
 

@@ -16,7 +16,9 @@ public record CryptoStats(LocalDateTime periodStart,
         return new CryptoStats(periodStart, periodEnd, symbol, DataStatus.RED, 0, 0, 0, 0, 0);
     }
 
-    public static CryptoStats of(String symbol, LocalDateTime periodStart, LocalDateTime periodEnd, DataStatus dataStatus, double minPrice, double maxPrice, double oldestPrice, double latestPrice, double normalizedRange) {
-        return new CryptoStats(periodStart, periodEnd, symbol, dataStatus, minPrice, maxPrice, oldestPrice, latestPrice, normalizedRange);
+    public static CryptoStats of(String symbol, LocalDateTime periodStart, LocalDateTime periodEnd,
+                                 DataStatus dataStatus, double minRate, double maxRate,
+                                 double oldestRate, double latestRate, double normalizedRange) {
+        return new CryptoStats(periodStart, periodEnd, symbol, dataStatus, minRate, maxRate, oldestRate, latestRate, normalizedRange);
     }
 }

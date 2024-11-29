@@ -12,17 +12,16 @@ public interface RecommendationService {
 
     /**
      * Exposes an endpoint that will return a descending sorted list of all the cryptos,
-     *  comparing the normalized range (i.e. (max-min)/min)
+     *  comparing the normalized range (i.e. (max-min)/min). It is assumed that user will ask for last available
+     *  normalized data.
      *
      * @return - a list of all the cryptos, sorted by normalized range
      */
-    List<String> listNormalized();
-
-    // TODO: Document method
+    List<CryptoStats> listNormalized();
 
     /**
      * Exposes an endpoint that will return the oldest/newest/min/max values for a requested
-     * crypto
+     * crypto. It is assumed that user will ask for last available normalized data.
      *
      * @param symbol - the symbol of the crypto for which we want to find the oldest/newest/min/max
      *               values (e.g. BTC)

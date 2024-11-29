@@ -1,7 +1,7 @@
 package com.rprelevic.xm.recom.api;
 
 import com.rprelevic.xm.recom.api.model.IngestionRequest;
-import com.rprelevic.xm.recom.api.model.Price;
+import com.rprelevic.xm.recom.api.model.Rate;
 
 import java.util.List;
 
@@ -14,11 +14,11 @@ import java.util.List;
 public interface DataSourceReader {
 
     /**
-     * Reads the prices from the datasource based on the request.
+     * Reads the rates from the datasource based on the request.
      *
      * @param request - the request object containing relevant information for datasource extraction.
-     * @return - a list of prices
+     * @return - a list of rates extracted from the datasource
      */
-    List<Price> readPrices(IngestionRequest request);
+    List<Rate> readRates(IngestionRequest request);
 
 }
