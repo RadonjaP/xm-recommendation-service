@@ -3,19 +3,26 @@ package com.rprelevic.xm.recom.impl;
 import com.rprelevic.xm.recom.api.CryptoStatsCalculator;
 import com.rprelevic.xm.recom.api.DataSourceReader;
 import com.rprelevic.xm.recom.api.RatesConsolidator;
-import com.rprelevic.xm.recom.api.model.*;
-import com.rprelevic.xm.recom.api.repository.RatesRepository;
+import com.rprelevic.xm.recom.api.model.IngestionDetails;
+import com.rprelevic.xm.recom.api.model.IngestionRequest;
+import com.rprelevic.xm.recom.api.model.Rate;
+import com.rprelevic.xm.recom.api.model.SymbolProperties;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
 import com.rprelevic.xm.recom.api.repository.IngestionDetailsRepository;
+import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
+import com.rprelevic.xm.recom.impl.ex.FailedToObtainLockException;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.rprelevic.xm.recom.api.model.DataStatus.RED;
 import static com.rprelevic.xm.recom.api.model.IngestionDetails.IngestionStatus.IN_PROGRESS;
 
 public class IngestionOrchestrator {
@@ -57,34 +64,37 @@ public class IngestionOrchestrator {
                 .ingestionStartTime(LocalDateTime.now())
                 .status(IN_PROGRESS)
                 .build();
+
         try {
+            // Validate we can ingest the symbol and lock it
+            final var symbolProperties = verifyAndLockSymbol(request.symbol());
 
             ingestionDetailsRepository.save(ingestionDetails);
 
-            // TODO: Consider adding ingestionId to property lock
-            // Validate we can ingest the symbol and lock it
-            verifyAndLockSymbol(request.symbol());
-
             // Read rates from datasource
             final List<Rate> newRates = sourceReader.readRates(request);
+            if (newRates.isEmpty()) {
+                LOGGER.error("No input rates found for symbol {} in source {}.", request.symbol(), request.source());
+                throw new RuntimeException("No input rates found for symbol %s in source %s.".formatted(request.symbol(), request.source()));
+            }
 
-            // fetch the latest rates from the database for desired time window and consolidate them with new data
-            final var startPeriod = newRates.get(newRates.size() - 1).dateTime();
-            final var endPeriod = newRates.get(0).dateTime();
-
+            // Fetch the latest rates from the database for desired time window and consolidate them with new data
+            final var startAndEndPeriodPair = findStartAndEndPeriod(newRates, symbolProperties);
             final List<Rate> existingRates = ratesRepository
-                    .findRatesBySymbolAndInTimeWindow(request.symbol(), startPeriod, endPeriod);
+                    .findRatesBySymbolAndInTimeWindow(request.symbol(),
+                            startAndEndPeriodPair.getLeft(), startAndEndPeriodPair.getRight());
 
-            final var consolidationResult = ratesConsolidator.consolidate(existingRates, newRates, startPeriod, endPeriod);
+            final var consolidationResult = ratesConsolidator.consolidate(existingRates, newRates,
+                    startAndEndPeriodPair.getLeft(), startAndEndPeriodPair.getRight());
 
             // calculate statistics for desired time window
             final var timeWindowStats = cryptoStatsCalculator.calculateStats(consolidationResult);
 
-            if (DataStatus.RED.equals(timeWindowStats.status())) {
+            if (RED.equals(timeWindowStats.status())) {
 
                 // Keep user notified about the RED status but do not store rate data in the database
                 cryptoStatsRepository.saveCryptoStats(timeWindowStats);
-                throw new RuntimeException("Data status is RED."); // TODO: Define exception
+                throw new RuntimeException("Data status is RED.");
             }
 
             // Store rates in the database
@@ -96,26 +106,40 @@ public class IngestionOrchestrator {
             // Update ingestion information in the database
             ingestionDetailsRepository.ingestionSuccessful(ingestionDetails, consolidationResult.consolidatedRates().size());
 
+        } catch (FailedToObtainLockException e) {
+            LOGGER.error("Failed to obtain lock for symbol {}. Ingestion failed from source {}.", request.symbol(), request.source(), e);
+            ingestionDetailsRepository.ingestionFailed(ingestionDetails);
+            return;
         } catch (Exception e) {
             LOGGER.error("Symbol {} ingestion failed from source {}.", request.symbol(), request.source(), e);
             ingestionDetailsRepository.ingestionFailed(ingestionDetails);
-        } finally {
-            // Release the lock on the symbol
-            symbolPropertiesRepository.unlockSymbol(request.symbol());
         }
+
+        // Release the lock on the symbol
+        symbolPropertiesRepository.unlockSymbol(request.symbol());
     }
 
-    private void verifyAndLockSymbol(String symbol) {
+    private Pair<Instant, Instant> findStartAndEndPeriod(List<Rate> newRates, SymbolProperties symbolProperties) {
+
+        final var endDate = newRates.get(0).dateTime();
+        final var startDate = symbolProperties.timeWindow().findStart(endDate);
+
+        return Pair.of(startDate, endDate);
+    }
+
+    private SymbolProperties verifyAndLockSymbol(String symbol) {
         final Optional<SymbolProperties> symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol);
         if (symbolProperties.isEmpty()) {
-            throw new RuntimeException("Symbol %s is not supported.".formatted(symbol)); // TODO: Define exception
+            throw new FailedToObtainLockException("Symbol %s is not supported.".formatted(symbol));
         }
         if (symbolProperties.get().locked()) {
-            throw new RuntimeException("Symbol %s is already locked.".formatted(symbol)); // TODO: Define exception
+            throw new FailedToObtainLockException("Symbol %s is already locked.".formatted(symbol));
         }
 
         symbolPropertiesRepository.lockSymbol(symbol)
-                .orElseThrow(() -> new RuntimeException("Failed to lock the symbol %s".formatted(symbol))); // TODO: Define exception
+                .orElseThrow(() -> new FailedToObtainLockException("Failed to lock the symbol %s".formatted(symbol)));
+
+        return symbolProperties.get();
     }
 
 }

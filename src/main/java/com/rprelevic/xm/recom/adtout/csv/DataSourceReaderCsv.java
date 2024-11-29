@@ -4,12 +4,11 @@ import com.rprelevic.xm.recom.adtout.csv.ex.DataSourceReadFailedException;
 import com.rprelevic.xm.recom.api.DataSourceReader;
 import com.rprelevic.xm.recom.api.model.IngestionRequest;
 import com.rprelevic.xm.recom.api.model.Rate;
+import com.rprelevic.xm.recom.utils.InstantUtils;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -27,9 +26,9 @@ public class DataSourceReaderCsv implements DataSourceReader {
                     .map(line -> {
                         String[] parts = line.split(",");
                         return new Rate(
-                                Instant.ofEpochMilli(Long.parseLong(parts[0])), // dateTime
+                                InstantUtils.toInstant(Long.parseLong(parts[0])), // dateTime
                                 parts[1], // symbol
-                                Double.parseDouble(parts[2]) // rate
+                                Double.parseDouble(parts[2]) // price
                         );
                     })
                     .sorted((p1, p2) -> p2.dateTime().compareTo(p1.dateTime())) // Sort by dateTime descending
@@ -38,9 +37,6 @@ public class DataSourceReaderCsv implements DataSourceReader {
         } catch (NoSuchFileException e) {
             LOGGER.severe("File not found: " + request.source());
             throw new DataSourceReadFailedException("File not found: " + request.source(), e); // Rethrow exception
-        } catch (IOException e) {
-            LOGGER.severe("Error reading data: " + request.source());
-            throw new DataSourceReadFailedException("Error reading data: " + request.source(), e);
         } catch (Exception e) {
             LOGGER.severe("Error reading file: " + request.source());
             throw new DataSourceReadFailedException("Error reading file: " + request.source(), e);

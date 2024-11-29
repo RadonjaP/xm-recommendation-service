@@ -101,7 +101,7 @@ class IngestionOrchestratorTest {
         List<Rate> existingRates = List.of(new Rate(Instant.now().minus(1, ChronoUnit.DAYS), "BTC", 90.0));
         ConsolidationResult consolidationResult = new ConsolidationResult(rates, DataStatus.RED,
                 Instant.now().minus(1, ChronoUnit.DAYS), Instant.now(), "BTC");
-        
+
         when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
         when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.of(true));
         when(sourceReader.readRates(request)).thenReturn(rates);
@@ -135,4 +135,49 @@ class IngestionOrchestratorTest {
                 .ingestionFailed(argThat(details -> details.status().equals(IngestionStatus.IN_PROGRESS)));
         verify(symbolPropertiesRepository).unlockSymbol("BTC");
     }
+
+    @Test
+    void givenSymbolNotSupported_whenIngest_thenUpdateStatusToFailure() {
+        IngestionRequest request = new IngestionRequest("source", "BTC", SourceType.API);
+
+        when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.empty());
+
+        ingestionOrchestrator.ingest(request);
+
+        verify(ingestionDetailsRepository)
+                .ingestionFailed(argThat(details -> details.status().equals(IngestionStatus.IN_PROGRESS)));
+        verify(symbolPropertiesRepository, never()).lockSymbol("BTC");
+    }
+
+    @Test
+    void givenSymbolPresent_whenLockSymbolFails_thenUpdateStatusToFailure() {
+        IngestionRequest request = new IngestionRequest("source", "BTC", SourceType.API);
+        SymbolProperties symbolProperties = new SymbolProperties("BTC", MONTHLY, false, null);
+
+        when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
+        when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.empty());
+
+        ingestionOrchestrator.ingest(request);
+
+        verify(ingestionDetailsRepository)
+                .ingestionFailed(argThat(details -> details.status().equals(IngestionStatus.IN_PROGRESS)));
+        verify(symbolPropertiesRepository).lockSymbol("BTC");
+    }
+
+    @Test
+    void givenEmptyRates_whenIngest_thenUpdateStatusToFailure() throws Exception {
+        IngestionRequest request = new IngestionRequest("source", "BTC", SourceType.API);
+        SymbolProperties symbolProperties = new SymbolProperties("BTC", MONTHLY, false, null);
+
+        when(symbolPropertiesRepository.findSymbolProperties("BTC")).thenReturn(Optional.of(symbolProperties));
+        when(symbolPropertiesRepository.lockSymbol("BTC")).thenReturn(Optional.of(true));
+        when(sourceReader.readRates(request)).thenReturn(List.of());
+
+        ingestionOrchestrator.ingest(request);
+
+        verify(ingestionDetailsRepository)
+                .ingestionFailed(argThat(details -> details.status().equals(IngestionStatus.IN_PROGRESS)));
+        verify(symbolPropertiesRepository).unlockSymbol("BTC");
+    }
+
 }

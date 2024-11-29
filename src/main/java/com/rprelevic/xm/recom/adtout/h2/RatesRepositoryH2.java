@@ -8,10 +8,12 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
+
+import static com.rprelevic.xm.recom.utils.InstantUtils.toInstant;
 
 public class RatesRepositoryH2 implements RatesRepository {
 
@@ -44,10 +46,10 @@ public class RatesRepositoryH2 implements RatesRepository {
     }
 
     @Override
-    public List<Rate> findRatesBySymbolAndInTimeWindow(String symbol, java.time.Instant start, java.time.Instant end) {
+    public List<Rate> findRatesBySymbolAndInTimeWindow(String symbol, Instant start, Instant end) {
         return jdbcTemplate.query(FIND_SYMBOL_IN_TIME_WINDOW_SQL,
                 (rs, rowNum) -> new Rate(
-                        rs.getTimestamp("date_time").toInstant(),
+                        toInstant(rs.getTimestamp("date_time")),
                         rs.getString("symbol"),
                         rs.getDouble("rate")
                 ),
@@ -60,11 +62,11 @@ public class RatesRepositoryH2 implements RatesRepository {
         final LocalDateTime endOfDay = date.atTime(23, 59, 59);
         return jdbcTemplate.query(FIND_ALL_PRICES_FOR_DATE_SQL,
                 (rs, rowNum) -> new Rate(
-                        rs.getTimestamp("date_time").toInstant(),
+                        toInstant(rs.getTimestamp("date_time")),
                         rs.getString("symbol"),
                         rs.getDouble("rate")
                 ),
-                java.sql.Timestamp.from(startOfDay.toInstant(ZoneOffset.UTC)),
-                java.sql.Timestamp.from(endOfDay.toInstant(ZoneOffset.UTC)));
+                java.sql.Timestamp.from(toInstant(startOfDay)),
+                java.sql.Timestamp.from(toInstant(endOfDay)));
     }
 }

@@ -80,4 +80,5 @@ class DataSourceReaderCsvTest {
 
         assertTrue(rates.isEmpty());
     }
+
 }

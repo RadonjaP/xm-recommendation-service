@@ -14,6 +14,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -95,6 +96,29 @@ class CryptoStatsRepositoryH2Test {
         Optional<CryptoStats> foundStats = repository.findLatestCryptoStatsBySymbol("ETH");
 
         assertThat(foundStats).isNotPresent();
+    }
+
+    @Test
+    void givenCryptoStatsInDatabase_whenFindLatestStatsForAllSymbols_thenReturnListOfCryptoStats() {
+        // Given
+        CryptoStats cryptoStats1 = CryptoStats.of(
+                "BTC", toLocalDateTime(2023, 1, 1), toLocalDateTime(2023, 1, 31),
+                DataStatus.GREEN, 30000.0, 40000.0, 31000.0, 39000.0, 0.25
+        );
+        CryptoStats cryptoStats2 = CryptoStats.of(
+                "ETH", toLocalDateTime(2023, 1, 1), toLocalDateTime(2023, 1, 31),
+                DataStatus.GREEN, 2000.0, 3000.0, 2100.0, 2900.0, 0.35
+        );
+        repository.saveCryptoStats(cryptoStats1);
+        repository.saveCryptoStats(cryptoStats2);
+
+        // When
+        List<CryptoStats> latestStats = repository.findLatestStatsForAllSymbols();
+
+        // Then
+        assertThat(latestStats).hasSize(2);
+        assertThat(latestStats).extracting(CryptoStats::symbol).containsExactlyInAnyOrder("BTC", "ETH");
+        assertThat(latestStats).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(cryptoStats1, cryptoStats2);
     }
 
     private LocalDateTime toLocalDateTime(int year, int month, int day) {

@@ -12,8 +12,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
+import static com.rprelevic.xm.recom.utils.InstantUtils.toInstant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @JdbcTest
@@ -32,7 +34,7 @@ class RatesRepositoryH2Test {
     }
 
     @Test
-    void givenratesList_whenratesExist_thenExpectAllratesStored() {
+    void givenRatesList_whenRatesExist_thenExpectAllRatesStored() {
         List<Rate> rates = List.of(
                 new Rate(Instant.now(), "BTC", 50000.0),
                 new Rate(Instant.now(), "ETH", 4000.0)
@@ -41,7 +43,7 @@ class RatesRepositoryH2Test {
         repository.saveAll(rates);
 
         List<Rate> storedRates = jdbcTemplate.query("SELECT * FROM rates", (rs, rowNum) -> new Rate(
-                rs.getTimestamp("date_time").toInstant(),
+                toInstant(rs.getTimestamp("date_time")),
                 rs.getString("symbol"),
                 rs.getDouble("rate")
         ));
@@ -83,6 +85,23 @@ class RatesRepositoryH2Test {
 
         List<Rate> foundRates = repository.findRatesBySymbolAndInTimeWindow("ETH", now.minusSeconds(60), now.plusSeconds(60));
         assertThat(foundRates).isEmpty();
+    }
+
+    @Test
+    void givenRatesInDatabase_whenFindAllPricesForDate_thenReturnRatesForThatDate() {
+        // Given
+        LocalDate date = LocalDate.of(2023, 1, 1);
+        Rate rate1 = new Rate(toInstant(date.atStartOfDay()), "BTC", 50000.0);
+        Rate rate2 = new Rate(toInstant(date.atTime(23, 59, 59)), "ETH", 4000.0);
+        repository.saveAll(List.of(rate1, rate2));
+
+        // When
+        List<Rate> foundRates = repository.findAllPricesForDate(date);
+
+        // Then
+        assertThat(foundRates).hasSize(2);
+        assertThat(foundRates).extracting(Rate::symbol).containsExactlyInAnyOrder("BTC", "ETH");
+        assertThat(foundRates).usingRecursiveFieldByFieldElementComparator().containsExactlyInAnyOrder(rate1, rate2);
     }
 
 }

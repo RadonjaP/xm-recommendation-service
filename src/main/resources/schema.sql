@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS crypto_stats (
 CREATE TABLE IF NOT EXISTS ingestion_details (
     ingestion_id VARCHAR(36) NOT NULL,
     source_name VARCHAR(255) NOT NULL,
-    symbol VARCHAR(255) NOT NULL,
+    symbol VARCHAR(6) NOT NULL,
     source_type VARCHAR(255) NOT NULL,
     ingestion_start_time TIMESTAMP NOT NULL,
     ingestion_end_time TIMESTAMP,

@@ -4,12 +4,12 @@ import com.rprelevic.xm.recom.api.RatesConsolidator;
 import com.rprelevic.xm.recom.api.model.ConsolidationResult;
 import com.rprelevic.xm.recom.api.model.DataStatus;
 import com.rprelevic.xm.recom.api.model.Rate;
+import com.rprelevic.xm.recom.utils.InstantUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -39,7 +39,7 @@ public class RatesConsolidatorImpl implements RatesConsolidator {
 
         // Verify that all days are present in the existing rates
         final Set<LocalDate> existingRatesDates = existingRatesSet.stream()
-                .map(rate -> rate.dateTime().atZone(ZoneId.systemDefault()).toLocalDate())
+                .map(rate -> InstantUtils.toLocalDate(rate.dateTime()))
                 .collect(Collectors.toSet());
 
         if (existingRatesDates.containsAll(datesInPeriod)) {
@@ -51,8 +51,8 @@ public class RatesConsolidatorImpl implements RatesConsolidator {
     }
 
     private Set<LocalDate> findAllDaysBetween(Instant start, Instant end) {
-        final var startDate = start.atZone(ZoneId.systemDefault()).toLocalDate();
-        final var endDate = end.atZone(ZoneId.systemDefault()).toLocalDate();
+        final var startDate = InstantUtils.toLocalDate(start);
+        final var endDate = InstantUtils.toLocalDate(end);
 
         return startDate.datesUntil(endDate.plusDays(1))
                 .collect(Collectors.toSet());

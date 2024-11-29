@@ -6,11 +6,13 @@ import com.rprelevic.xm.recom.api.model.Rate;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
 import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
+import com.rprelevic.xm.recom.impl.ex.SymbolNotSupportedException;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class RecommendationServiceImpl implements RecommendationService {
@@ -37,7 +39,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         // Check if the symbol is supported
         // TODO: Cache the symbol properties
         final var symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol)
-                .orElseThrow(() -> new IllegalArgumentException("Symbol not supported: " + symbol)); // TODO: Exception handling
+                .orElseThrow(() -> new SymbolNotSupportedException("Symbol not supported: " + symbol));
 
         // Retrieve the latest crypto stats for the symbol
         return cryptoStatsRepository
@@ -58,18 +60,19 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .collect(Collectors.groupingBy(Rate::symbol))
                 .entrySet()
                 .stream()
-                .map(entry -> {
-
-                    String symbol = entry.getKey();
-                    List<Rate> symbolRates = entry.getValue();
-                    double minRate = symbolRates.stream().mapToDouble(Rate::rate).min().orElse(0);
-                    double maxRate = symbolRates.stream().mapToDouble(Rate::rate).max().orElse(0);
-                    Double normalizedRange = (maxRate - minRate) / minRate;
-
-                    return Pair.of(symbol, normalizedRange);
-                })
+                .map(this::mapToSymbolAndNormalizedRangePair)
                 .max(Comparator.comparingDouble(Pair::getRight))
                 .map(Pair::getLeft)
                 .orElse("No symbol found");
+    }
+
+    private Pair<String, Double> mapToSymbolAndNormalizedRangePair(Map.Entry<String, List<Rate>> entry) {
+        String symbol = entry.getKey();
+        List<Rate> symbolRates = entry.getValue();
+        double minRate = symbolRates.stream().mapToDouble(Rate::rate).min().orElse(0);
+        double maxRate = symbolRates.stream().mapToDouble(Rate::rate).max().orElse(0);
+        Double normalizedRange = (maxRate - minRate) / minRate;
+
+        return Pair.of(symbol, normalizedRange);
     }
 }
