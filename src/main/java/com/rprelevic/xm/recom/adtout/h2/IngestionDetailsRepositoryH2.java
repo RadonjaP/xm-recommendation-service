@@ -90,8 +90,13 @@ public class IngestionDetailsRepositoryH2 implements IngestionDetailsRepository 
         );
     }
 
+    /**
+     * Converts a nullable Timestamp to a nullable LocalDateTime.
+     *
+     * @param timestamp the nullable Timestamp
+     * @return the nullable LocalDateTime
+     */
     private LocalDateTime toNullableLocalDateTime(Timestamp timestamp) {
-
         return timestamp != null ? timestamp.toLocalDateTime() : null;
     }
 

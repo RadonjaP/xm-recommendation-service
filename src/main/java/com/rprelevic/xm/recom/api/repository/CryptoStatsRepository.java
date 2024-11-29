@@ -11,24 +11,24 @@ import java.util.Optional;
 public interface CryptoStatsRepository {
 
     /**
-     * Saves the given CryptoStats entity.
+     * Saves the given {@link CryptoStats} entity.
      *
-     * @param cryptoStats the CryptoStats entity to save
+     * @param cryptoStats the {@link CryptoStats} entity to save
      */
     void saveCryptoStats(CryptoStats cryptoStats);
 
     /**
-     * Finds the latest CryptoStats entity by the given symbol.
+     * Finds the latest {@link CryptoStats} entity by the given symbol.
      *
      * @param symbol the symbol to search for
-     * @return an Optional containing the latest CryptoStats entity if found, otherwise empty
+     * @return an Optional containing the latest {@link CryptoStats} entity if found, otherwise empty
      */
     Optional<CryptoStats> findLatestCryptoStatsBySymbol(String symbol);
 
     /**
-     * Finds the latest CryptoStats entities for all symbols.
+     * Finds the latest {@link CryptoStats} entities for all symbols.
      *
-     * @return a list of the latest CryptoStats entities for all symbols
+     * @return a list of the latest {@link CryptoStats} entities for all symbols
      */
     List<CryptoStats> findLatestStatsForAllSymbols();
 }

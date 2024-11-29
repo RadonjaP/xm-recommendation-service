@@ -14,12 +14,20 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 public class SecurityConfig {
 
+    /**
+     * Configures the security filter chain.
+     *
+     * @param http the HttpSecurity object to configure
+     * @return the configured SecurityFilterChain
+     * @throws Exception if an error occurs during configuration
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(authorizeRequests ->
                         authorizeRequests
-                                // TODO: Remove API (just for testing)
-                                .requestMatchers("/api/**","/h2-console/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll() // Allow access to H2 console and Swagger UI
+                                .requestMatchers("/h2-console/**", "/swagger-ui/**",
+                                        "/swagger-ui.html", "/v3/api-docs/**")
+                                .permitAll() // Allow access to H2 console and Swagger UI
                                 .anyRequest().authenticated()
                 )
                 .csrf(AbstractHttpConfigurer::disable) // Disable CSRF protection for H2 console
@@ -29,6 +37,11 @@ public class SecurityConfig {
                 .build();
     }
 
+    /**
+     * Configures CORS mappings.
+     *
+     * @return the configured WebMvcConfigurer
+     */
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {

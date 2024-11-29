@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of the {@link RecommendationService} interface.
+ */
 public class RecommendationServiceImpl implements RecommendationService {
 
     private final RatesRepository ratesRepository;
@@ -69,6 +72,12 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .orElse("No symbol found");
     }
 
+    /**
+     * Maps a symbol and its rates to a pair containing the symbol and the normalized range.
+     *
+     * @param entry the entry containing the symbol and its rates
+     * @return a pair containing the symbol and the normalized range
+     */
     private Pair<String, Double> mapToSymbolAndNormalizedRangePair(Map.Entry<String, List<Rate>> entry) {
         String symbol = entry.getKey();
         List<Rate> symbolRates = entry.getValue();

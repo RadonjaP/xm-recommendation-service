@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link RatesConsolidator}.
+ */
 public class RatesConsolidatorImpl implements RatesConsolidator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RatesConsolidatorImpl.class);
@@ -50,6 +53,13 @@ public class RatesConsolidatorImpl implements RatesConsolidator {
         }
     }
 
+    /**
+     * Finds all days between the given start and end instant.
+     *
+     * @param start the start instant
+     * @param end   the end instant
+     * @return the set of all days between the given start and end instant
+     */
     private Set<LocalDate> findAllDaysBetween(Instant start, Instant end) {
         final var startDate = InstantUtils.toLocalDate(start);
         final var endDate = InstantUtils.toLocalDate(end);

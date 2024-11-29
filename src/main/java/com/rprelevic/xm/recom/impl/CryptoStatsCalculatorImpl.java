@@ -7,6 +7,9 @@ import com.rprelevic.xm.recom.api.model.CryptoStats;
 import static com.rprelevic.xm.recom.api.model.DataStatus.RED;
 import static com.rprelevic.xm.recom.utils.InstantUtils.toLocalDateTime;
 
+/**
+ * Implementation of the {@link CryptoStatsCalculator} interface.
+ */
 public class CryptoStatsCalculatorImpl implements CryptoStatsCalculator {
 
     @Override

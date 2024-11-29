@@ -66,6 +66,11 @@ public class RateStatsAccumulator {
         return latestRate;
     }
 
+    /**
+     * Static factory method to create a new RateStatsAccumulator.
+     *
+     * @return a new RateStatsAccumulator
+     */
     public static RateStatsAccumulator create() {
         return new RateStatsAccumulator();
     }

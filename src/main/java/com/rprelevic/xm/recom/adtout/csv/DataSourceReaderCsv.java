@@ -12,6 +12,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.logging.Logger;
 
+/**
+ * DataSourceReader implementation for CSV files.
+ */
 public class DataSourceReaderCsv implements DataSourceReader {
 
     private static final Logger LOGGER = Logger.getLogger(DataSourceReaderCsv.class.getName());

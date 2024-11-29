@@ -1,0 +1,45 @@
+2024-11-29 22:04:41.098940+01:00 jdbc[5]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SYMBOL_PROPERTIES" not found (this database is empty); SQL statement:
+SELECT symbol, time_window, locked, locked_at FROM symbol_properties WHERE symbol = ? [42104-232]
+2024-11-29 22:04:41.098940+01:00 jdbc[6]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SYMBOL_PROPERTIES" not found (this database is empty); SQL statement:
+SELECT symbol, time_window, locked, locked_at FROM symbol_properties WHERE symbol = ? [42104-232]
+2024-11-29 22:04:41.098940+01:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SYMBOL_PROPERTIES" not found (this database is empty); SQL statement:
+SELECT symbol, time_window, locked, locked_at FROM symbol_properties WHERE symbol = ? [42104-232]
+2024-11-29 22:04:41.098940+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SYMBOL_PROPERTIES" not found (this database is empty); SQL statement:
+SELECT symbol, time_window, locked, locked_at FROM symbol_properties WHERE symbol = ? [42104-232]
+2024-11-29 22:04:41.098940+01:00 jdbc[7]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "SYMBOL_PROPERTIES" not found (this database is empty); SQL statement:
+SELECT symbol, time_window, locked, locked_at FROM symbol_properties WHERE symbol = ? [42104-232]
+2024-11-29 22:04:41.113320+01:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "INGESTION_DETAILS" not found (this database is empty); SQL statement:
+    MERGE INTO ingestion_details (ingestion_id, source_name, symbol, source_type, ingestion_start_time, ingestion_end_time, number_of_records_ingested, status)
+    KEY (ingestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ [42104-232]
+2024-11-29 22:04:41.113320+01:00 jdbc[6]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "INGESTION_DETAILS" not found (this database is empty); SQL statement:
+    MERGE INTO ingestion_details (ingestion_id, source_name, symbol, source_type, ingestion_start_time, ingestion_end_time, number_of_records_ingested, status)
+    KEY (ingestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ [42104-232]
+2024-11-29 22:04:41.113320+01:00 jdbc[5]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "INGESTION_DETAILS" not found (this database is empty); SQL statement:
+    MERGE INTO ingestion_details (ingestion_id, source_name, symbol, source_type, ingestion_start_time, ingestion_end_time, number_of_records_ingested, status)
+    KEY (ingestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ [42104-232]
+2024-11-29 22:04:41.113320+01:00 jdbc[7]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "INGESTION_DETAILS" not found (this database is empty); SQL statement:
+    MERGE INTO ingestion_details (ingestion_id, source_name, symbol, source_type, ingestion_start_time, ingestion_end_time, number_of_records_ingested, status)
+    KEY (ingestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ [42104-232]
+2024-11-29 22:04:41.113320+01:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "INGESTION_DETAILS" not found (this database is empty); SQL statement:
+    MERGE INTO ingestion_details (ingestion_id, source_name, symbol, source_type, ingestion_start_time, ingestion_end_time, number_of_records_ingested, status)
+    KEY (ingestion_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+ [42104-232]

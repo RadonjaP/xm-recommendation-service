@@ -2,6 +2,9 @@ package com.rprelevic.xm.recom.api.model;
 
 import com.rprelevic.xm.recom.impl.SourceType;
 
+/**
+ * Represents an ingestion request.
+ */
 public class IngestionRequest {
     private final String source;
     private final String symbol;

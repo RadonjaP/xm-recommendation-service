@@ -25,6 +25,9 @@ import java.util.UUID;
 import static com.rprelevic.xm.recom.api.model.DataStatus.RED;
 import static com.rprelevic.xm.recom.api.model.IngestionDetails.IngestionStatus.IN_PROGRESS;
 
+/**
+ * Orchestrates the ingestion process for financial data.
+ */
 public class IngestionOrchestrator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(IngestionOrchestrator.class);
@@ -37,6 +40,17 @@ public class IngestionOrchestrator {
     private final CryptoStatsRepository cryptoStatsRepository;
     private final CryptoStatsCalculator cryptoStatsCalculator;
 
+    /**
+     * Constructs an IngestionOrchestrator with the necessary dependencies.
+     *
+     * @param datasourceReader the data source reader
+     * @param ratesRepository the rates repository
+     * @param ingestionDetailsRepository the ingestion details repository
+     * @param ratesConsolidator the rates consolidator
+     * @param symbolPropertiesRepository the symbol properties repository
+     * @param cryptoStatsRepository the crypto stats repository
+     * @param cryptoStatsCalculator the crypto stats calculator
+     */
     public IngestionOrchestrator(DataSourceReader datasourceReader,
                                  RatesRepository ratesRepository,
                                  IngestionDetailsRepository ingestionDetailsRepository,
@@ -53,6 +67,11 @@ public class IngestionOrchestrator {
         this.cryptoStatsCalculator = cryptoStatsCalculator;
     }
 
+    /**
+     * Ingests data based on the given request.
+     *
+     * @param request the ingestion request
+     */
     public void ingest(IngestionRequest request) {
         // Store basic ingestion details in the database
         final String ingestionId = UUID.randomUUID().toString();
@@ -119,6 +138,13 @@ public class IngestionOrchestrator {
         symbolPropertiesRepository.unlockSymbol(request.symbol());
     }
 
+    /**
+     * Finds the start and end period for the given rates and symbol properties.
+     *
+     * @param newRates the new rates
+     * @param symbolProperties the symbol properties
+     * @return a pair containing the start and end period
+     */
     private Pair<Instant, Instant> findStartAndEndPeriod(List<Rate> newRates, SymbolProperties symbolProperties) {
 
         final var endDate = newRates.get(0).dateTime();
@@ -127,6 +153,14 @@ public class IngestionOrchestrator {
         return Pair.of(startDate, endDate);
     }
 
+    /**
+     * Verifies and locks the given symbol. Ingestion should stop in case that lock cannot be obtained.
+     * This is to prevent multiple ingestion processes for the same symbol.
+     *
+     * @param symbol the symbol to verify and lock
+     * @return the symbol properties
+     * @throws FailedToObtainLockException if the symbol cannot be locked
+     */
     private SymbolProperties verifyAndLockSymbol(String symbol) {
         final Optional<SymbolProperties> symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol);
         if (symbolProperties.isEmpty()) {
