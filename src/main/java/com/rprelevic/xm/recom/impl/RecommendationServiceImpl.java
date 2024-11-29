@@ -8,11 +8,13 @@ import com.rprelevic.xm.recom.api.repository.RatesRepository;
 import com.rprelevic.xm.recom.api.repository.SymbolPropertiesRepository;
 import com.rprelevic.xm.recom.impl.ex.SymbolNotSupportedException;
 import org.apache.commons.lang3.tuple.Pair;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class RecommendationServiceImpl implements RecommendationService {
@@ -27,6 +29,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         this.symbolPropertiesRepository = symbolPropertiesRepository;
     }
 
+    @Cacheable("cryptoStats")
     @Override
     public List<CryptoStats> listNormalized() {
         return cryptoStatsRepository.findLatestStatsForAllSymbols().stream()
@@ -34,25 +37,25 @@ public class RecommendationServiceImpl implements RecommendationService {
                 .collect(Collectors.toList());
     }
 
+    @Cacheable("cryptoStatsForSymbol")
     @Override
-    public CryptoStats getCryptoStatsForSymbol(String symbol) {
+    public Optional<CryptoStats> getCryptoStatsForSymbol(String symbol) {
         // Check if the symbol is supported
-        // TODO: Cache the symbol properties
         final var symbolProperties = symbolPropertiesRepository.findSymbolProperties(symbol)
                 .orElseThrow(() -> new SymbolNotSupportedException("Symbol not supported: " + symbol));
 
         // Retrieve the latest crypto stats for the symbol
         return cryptoStatsRepository
-                .findLatestCryptoStatsBySymbol(symbolProperties.symbol())
-                .orElseThrow(() -> new IllegalArgumentException("No stats found for symbol: " + symbol)); // TODO: Exception handling
+                .findLatestCryptoStatsBySymbol(symbolProperties.symbol());
     }
 
+    @Cacheable("highestNormalizedRangeForDay")
     @Override
     public String highestNormalizedRangeForDay(LocalDate day) {
         // Fetch all rates for the given day
         final var rates = ratesRepository.findAllPricesForDate(day);
         if (rates.isEmpty()) {
-            throw new IllegalArgumentException("No rates found for the given day: %s".formatted(day)); // TODO: Exception handling
+            throw new IllegalArgumentException("No rates found for the given day: %s".formatted(day));
         }
 
         // Group rates by symbol and calculate normalization rate for each symbol

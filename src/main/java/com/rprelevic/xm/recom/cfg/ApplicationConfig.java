@@ -14,6 +14,9 @@ import com.rprelevic.xm.recom.impl.CryptoStatsCalculatorImpl;
 import com.rprelevic.xm.recom.impl.IngestionOrchestrator;
 import com.rprelevic.xm.recom.impl.RatesConsolidatorImpl;
 import com.rprelevic.xm.recom.impl.RecommendationServiceImpl;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -68,5 +71,18 @@ public class ApplicationConfig {
                 symbolPropertiesRepository,
                 cryptoStatsRepository,
                 new CryptoStatsCalculatorImpl());
+    }
+
+    @Bean
+    public CacheManager cacheManager() {
+        return new ConcurrentMapCacheManager("cryptoStats", "highestNormalizedRangeForDay", "cryptoStatsForSymbol");
+    }
+
+    @Bean(name = "customRateLimitingFilter")
+    public FilterRegistrationBean<RateLimitingFilter> rateLimitingFilter() {
+        FilterRegistrationBean<RateLimitingFilter> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new RateLimitingFilter());
+        registrationBean.addUrlPatterns("/api/*");
+        return registrationBean;
     }
 }

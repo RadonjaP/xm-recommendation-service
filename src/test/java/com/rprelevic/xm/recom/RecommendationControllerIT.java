@@ -62,7 +62,7 @@ class RecommendationControllerIT {
 
     @Test
     void givenSymbol_whenGetCryptoStats_thenReturnCryptoStats() throws Exception {
-        mockMvc.perform(get("/api/v1/recommendation/stats/BTC"))
+        mockMvc.perform(get("/api/v1/recommendation/stats/BTC/info"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.symbol", is("BTC")))
                 .andExpect(jsonPath("$.minRate", is(33276.59)))
@@ -73,7 +73,7 @@ class RecommendationControllerIT {
 
     @Test
     void givenSymbolNotSupported_whenGetCryptoStats_thenReturnCryptoStats() throws Exception {
-        mockMvc.perform(get("/api/v1/recommendation/stats/TEST"))
+        mockMvc.perform(get("/api/v1/recommendation/stats/TEST/info"))
                 .andExpect(status().isBadRequest());
     }
 

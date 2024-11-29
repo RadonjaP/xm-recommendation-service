@@ -4,6 +4,7 @@ import com.rprelevic.xm.recom.api.model.CryptoStats;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Exposes business use-case functionalities related to recommendations.
@@ -25,9 +26,9 @@ public interface RecommendationService {
      *
      * @param symbol - the symbol of the crypto for which we want to find the oldest/newest/min/max
      *               values (e.g. BTC)
-     * @return  - the oldest/newest/min/max values for the requested crypto
+     * @return - the oldest/newest/min/max values for the requested crypto
      */
-    CryptoStats getCryptoStatsForSymbol(String symbol);
+    Optional<CryptoStats> getCryptoStatsForSymbol(String symbol);
 
     /**
      * Exposes an endpoint that will return the crypto with the highest normalized range for a

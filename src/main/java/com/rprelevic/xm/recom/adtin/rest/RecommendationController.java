@@ -25,7 +25,6 @@ public class RecommendationController {
     @Operation(summary = "Fetch descending sorted list of all cryptos comparing normalized range")
     @ApiResponse(responseCode = "200", description = "Success")
     public ResponseEntity<List<CryptoStatsRs>> getAllCryptosNormalizedRange() {
-
         return ResponseEntity.ok(recommendationService.listNormalized()
                 .stream().map(CryptoStatsRs::fromCryptoStats)
                 .toList());
@@ -33,9 +32,11 @@ public class RecommendationController {
 
     @GetMapping("/normalized-range/highest")
     @Operation(summary = "Get the crypto with the highest normalized range for a specific day")
-    @Parameter(name = "date", description = "Specific day in format dd-mm-yyyy", example = "01-01-2020", required = true)
     @ApiResponse(responseCode = "200", description = "Success")
-    public ResponseEntity<String> getCryptoWithHighestNormalizedRangeInDay(@RequestParam String date) {
+    @ApiResponse(responseCode = "400", description = "Invalid date format")
+    public ResponseEntity<String> getCryptoWithHighestNormalizedRangeInDay(
+            @Parameter(name = "date", description = "Specific day in format dd-MM-yyyy", example = "01-01-2020", required = true)
+            @RequestParam String date) {
 
         final LocalDate day;
         try {
@@ -47,14 +48,16 @@ public class RecommendationController {
         return ResponseEntity.ok(recommendationService.highestNormalizedRangeForDay(day));
     }
 
-    @GetMapping("/stats/{symbol}")
+    @GetMapping("/stats/{symbol}/info")
     @Operation(summary = "Get the oldest/newest/min/max values for a requested crypto")
-    @Parameter(name = "symbol", description = "Symbol of the crypto", required = true)
     @ApiResponse(responseCode = "200", description = "Success")
-    public ResponseEntity<CryptoStatsRs> getCryptoStats(@PathVariable String symbol) {
+    @ApiResponse(responseCode = "404", description = "Crypto not found")
+    public ResponseEntity<CryptoStatsRs> getCryptoStats(
+            @Parameter(name = "symbol", description = "Symbol of the crypto", required = true)
+            @PathVariable String symbol) {
 
         final var cryptoStats = recommendationService.getCryptoStatsForSymbol(symbol);
-        return ResponseEntity.ok(CryptoStatsRs.fromCryptoStats(cryptoStats));
+        return cryptoStats.map(stats -> ResponseEntity.ok(CryptoStatsRs.fromCryptoStats(stats)))
+                .orElseGet(() -> ResponseEntity.status(404).build());
     }
-
 }

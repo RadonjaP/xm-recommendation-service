@@ -60,9 +60,10 @@ class RecommendationServiceImplTest {
         when(symbolPropertiesRepository.findSymbolProperties(symbol)).thenReturn(Optional.of(symbolProperties));
         when(cryptoStatsRepository.findLatestCryptoStatsBySymbol(symbol)).thenReturn(Optional.of(cryptoStats));
 
-        CryptoStats result = recommendationService.getCryptoStatsForSymbol(symbol);
+        Optional<CryptoStats> result = recommendationService.getCryptoStatsForSymbol(symbol);
 
-        assertEquals(cryptoStats, result);
+        assertTrue(result.isPresent());
+        assertEquals(cryptoStats, result.get());
     }
 
     @Test
@@ -119,9 +120,10 @@ class RecommendationServiceImplTest {
         when(symbolPropertiesRepository.findSymbolProperties(symbol)).thenReturn(Optional.of(symbolProperties));
         when(cryptoStatsRepository.findLatestCryptoStatsBySymbol(symbol)).thenReturn(Optional.of(cryptoStats));
 
-        CryptoStats result = recommendationService.getCryptoStatsForSymbol(symbol);
+        Optional<CryptoStats> result = recommendationService.getCryptoStatsForSymbol(symbol);
 
-        assertEquals(cryptoStats, result);
+        assertTrue(result.isPresent());
+        assertEquals(cryptoStats, result.get());
     }
 
     @Test
@@ -141,16 +143,6 @@ class RecommendationServiceImplTest {
         when(ratesRepository.findAllPricesForDate(day)).thenReturn(null);
 
         assertThrows(NullPointerException.class, () -> recommendationService.highestNormalizedRangeForDay(day));
-    }
-
-    @Test
-    void givenValidSymbol_whenGetCryptoStatsForSymbol_thenThrowIllegalArgumentException() {
-        String symbol = "BTC";
-        SymbolProperties symbolProperties = new SymbolProperties(symbol, MONTHLY, false, LocalDateTime.now());
-        when(symbolPropertiesRepository.findSymbolProperties(symbol)).thenReturn(Optional.of(symbolProperties));
-        when(cryptoStatsRepository.findLatestCryptoStatsBySymbol(symbol)).thenReturn(Optional.empty());
-
-        assertThrows(IllegalArgumentException.class, () -> recommendationService.getCryptoStatsForSymbol(symbol));
     }
 
 }

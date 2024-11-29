@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: xm-recommendation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: xm-recommendation-service
+  template:
+    metadata:
+      labels:
+        app: xm-recommendation-service
+    spec:
+      containers:
+        - name: xm-recommendation-service
+          image: <add-docker-hub>/xm-recommendation-service:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: CSV_SOURCE_PATH
+              value: "/data"

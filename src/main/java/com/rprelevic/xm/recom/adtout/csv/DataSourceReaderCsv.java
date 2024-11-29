@@ -24,7 +24,7 @@ public class DataSourceReaderCsv implements DataSourceReader {
             return reader.lines()
                     .skip(1) // Skip header
                     .map(line -> {
-                        String[] parts = line.split(",");
+                        final String[] parts = line.split(",");
                         return new Rate(
                                 InstantUtils.toInstant(Long.parseLong(parts[0])), // dateTime
                                 parts[1], // symbol

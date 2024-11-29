@@ -4,10 +4,12 @@ import com.rprelevic.xm.recom.api.model.IngestionRequest;
 import com.rprelevic.xm.recom.impl.IngestionOrchestrator;
 import com.rprelevic.xm.recom.impl.SourceType;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,14 +36,14 @@ public class IngestionController {
 
     public IngestionController(IngestionOrchestrator ingestionOrchestrator) {
         this.ingestionOrchestrator = ingestionOrchestrator;
-        this.executorService = Executors.newFixedThreadPool(10);;
+        this.executorService = Executors.newFixedThreadPool(10);
     }
 
-
     @Operation(summary = "Start ingestion process", description = "Starts the ingestion process for all files in the source location")
+    @ApiResponse(responseCode = "200", description = "Ingestion started")
+    @ApiResponse(responseCode = "500", description = "Error fetching file paths from source location")
     @GetMapping("/start")
-    public void startIngestion() {
-
+    public ResponseEntity<Void> startIngestion() {
         final var fileNameAndPathPairs = fetchFilePathsFromSourceLocation();
         for (Pair<String, String> pair : fileNameAndPathPairs) {
             executorService.submit(() -> {
@@ -49,10 +51,10 @@ public class IngestionController {
                 ingestionOrchestrator.ingest(new IngestionRequest(pair.getRight(), symbol, SourceType.CSV));
             });
         }
+        return ResponseEntity.ok().build();
     }
 
     private List<Pair<String, String>> fetchFilePathsFromSourceLocation() {
-
         try (var paths = Files.walk(Paths.get(sourceLocation))) {
             return paths
                     .filter(Files::isRegularFile)

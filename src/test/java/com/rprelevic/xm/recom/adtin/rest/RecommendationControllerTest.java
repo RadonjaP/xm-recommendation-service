@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -64,9 +65,9 @@ public class RecommendationControllerTest {
         CryptoStats cryptoStats = new CryptoStats(null, null, "BTC", null,
                 1, 2, 3, 4, 5);
         Mockito.when(recommendationService.getCryptoStatsForSymbol(anyString()))
-                .thenReturn(cryptoStats);
+                .thenReturn(Optional.of(cryptoStats));
 
-        mockMvc.perform(get("/api/v1/recommendation/stats/BTC"))
+        mockMvc.perform(get("/api/v1/recommendation/stats/BTC/info"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.symbol", is("BTC")))
                 .andExpect(jsonPath("$.minRate", is(1.0)))

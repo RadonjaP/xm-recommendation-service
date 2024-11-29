@@ -4,7 +4,9 @@ import com.rprelevic.xm.recom.impl.SourceType;
 
 import java.time.LocalDateTime;
 
-// TODO: Generate Builders in all classes
+/**
+ * Represents the details of an ingestion process.
+ */
 public record IngestionDetails(
         String ingestionId,
         String sourceName,
