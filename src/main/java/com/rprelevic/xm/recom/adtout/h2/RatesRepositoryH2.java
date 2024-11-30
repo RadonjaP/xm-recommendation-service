@@ -2,6 +2,7 @@ package com.rprelevic.xm.recom.adtout.h2;
 
 import com.rprelevic.xm.recom.api.model.Rate;
 import com.rprelevic.xm.recom.api.repository.RatesRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -28,6 +29,7 @@ public class RatesRepositoryH2 implements RatesRepository {
     }
 
     @Override
+    @CacheEvict(value = {"cryptoStats", "cryptoStatsForSymbol", "highestNormalizedRangeForDay"}, allEntries = true)
     public void saveAll(List<Rate> rates) {
         jdbcTemplate.batchUpdate(SAVE_ALL_SQL, new BatchPreparedStatementSetter() {
             @Override

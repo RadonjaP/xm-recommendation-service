@@ -3,6 +3,7 @@ package com.rprelevic.xm.recom.adtout.h2;
 import com.rprelevic.xm.recom.api.model.CryptoStats;
 import com.rprelevic.xm.recom.api.model.DataStatus;
 import com.rprelevic.xm.recom.api.repository.CryptoStatsRepository;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.time.LocalDateTime;
@@ -38,6 +39,7 @@ public class CryptoStatsRepositoryH2 implements CryptoStatsRepository {
     }
 
     @Override
+    @CacheEvict(value = {"cryptoStats", "cryptoStatsForSymbol", "highestNormalizedRangeForDay"}, allEntries = true)
     public void saveCryptoStats(CryptoStats cryptoStats) {
         jdbcTemplate.update(MERGE_CRYPTO_STATS_SQL, ps -> {
             ps.setString(1, cryptoStats.symbol());

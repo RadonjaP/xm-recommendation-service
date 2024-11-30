@@ -31,6 +31,7 @@ public class IngestionController {
     private final IngestionOrchestrator ingestionOrchestrator;
     private final ExecutorService executorService;
 
+    // TODO: Adjust source location to some folder outside of the project
     @Value("${source.location}")
     private String sourceLocation;
 
